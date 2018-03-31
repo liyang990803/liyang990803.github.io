@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/fullPage.js/2.9.6/jquery.fullpage.min.css" rel="stylesheet" type="text/css"
+	/>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script>
+		function dataURLtoBlob(base64Data) {
+			var byteString;
+			if (base64Data.split(',')[0].indexOf('base64') >= 0)
+				byteString = atob(base64Data.split(',')[1]);
+			else
+				byteString = unescape(base64Data.split(',')[1]);
+			var mimeString = base64Data.split(',')[0].split(':')[1].split(';')[0];
+			var ia = new Uint8Array(byteString.length);
+			for (var i = 0; i < byteString.length; i++) {
+				ia[i] = byteString.charCodeAt(i);
+			}
+			return new Blob([ia], { type: mimeString });
+		}
+
+		function speak(text) {
+			var msg = new SpeechSynthesisUtterance(text);
+			window.speechSynthesis.speak(msg);
+		}
+	</script>
+</head>
+<!-- <video id="video" width="640" height="480" autoplay></video> -->
+<!-- <button id="snap">Snap Photo</button> -->
+<style>
+	.btn {
+		text-align: center;
+		margin-top: 30px;
+		margin-left: 700px;
+		font-size: 30px;
+		/* Green border */
+		padding: 10px 24px;
+		/* Some padding */
+		cursor: pointer;
+		/* Pointer/hand icon */
+		display: block;
+		/* Make the buttons appear below each other */
+		width: 200px;
+		position: absolute;
+	}
+
+	#capture {
+		top: 70px;
+	}
+
+	#upload {
+		top: 170px;
+	}
+</style>
+
+<body>
+	<div>
+		<video id="player" controls autoplay></video>
+		<button id="capture" type="button" class="btn btn-primary">Capture</button>
+		<button id="upload" type="button" class="btn btn-primary">Upload</button>
+	</div>
+	<div>
+		<canvas id="snapshot" width=400 height=300></canvas>
+	</div>
+	<script>
+		$(document).ready(function () {
+
+			var player = document.getElementById('player');
+			var snapshotCanvas = document.getElementById('snapshot');
+			var captureButton = document.getElementById('capture');
+			var uploadButton = document.getElementById('upload');
+			// var videoTracks;
+			var flag = false;
+
+			var handleSuccess = function (stream) {
+				// Attach the video stream to the video element and autoplay.
+				player.srcObject = stream;
+				//	videoTracks = stream.getVideoTracks();
+			};
+
+			captureButton.addEventListener('click', function () {
+				var context = snapshot.getContext('2d');
+				// Draw the video frame to the canvas.
+				context.drawImage(player, 0, 0, snapshotCanvas.width,
+					snapshotCanvas.height);
+			});
+
+			navigator.mediaDevices.getUserMedia({ video: true })
+				.then(handleSuccess);
+
+			uploadButton.addEventListener('click', function () {
+				// console.log("try to send file");
+				if (flag)
+					return;
+				var dataurl = snapshotCanvas.toDataURL('image/jpeg', 0.1);
+				var blob = dataURLtoBlob(dataurl);
+				//使用ajax发送
+				var fd = new FormData();
+				fd.append("image", blob, "image.jpeg");
+				fd.append("tracking", "true");
+				let xhr = new XMLHttpRequest();
+				xhr.open('POST', '/', true);
+				xhr.send(fd);
+				flag = true;
+				xhr.onreadystatechange = function () {
+					if (xhr.readyState == 4) {
+						if (xhr.status == 200) {
+							speak(xhr.responseText);
+						}
+						flag = false;
+					}
+				};
+				// POST the request every 5 seconds and ensure that 
+				// the last request has been received 
+			});
+		});
+	</script>
+</body>
+
+</html>
